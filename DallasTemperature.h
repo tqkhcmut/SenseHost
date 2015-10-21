@@ -171,10 +171,10 @@ struct DallasTemperature
 	bool (*alarmSearch)(uint8_t*);
 	
 	// returns true if ia specific device has an alarm
-	bool (*hasAlarm)(uint8_t*);
+	bool (*hasAlarm1)(uint8_t*);
 	
 	// returns true if any device is reporting an alarm on the bus
-	bool (*hasAlarm)(void);
+	bool (*hasAlarm2)(void);
 	
 	// runs the alarm handler for all devices returned by alarmSearch()
 	void (*processAlarms)(void);
@@ -183,7 +183,7 @@ struct DallasTemperature
 	void (*setAlarmHandler)(AlarmHandler *);
 	
 	// The default alarm handler
-	static void (*defaultAlarmHandler)(uint8_t*);
+	void (*defaultAlarmHandler)(uint8_t*);
 	
 #endif
 	
@@ -203,4 +203,6 @@ struct DallasTemperature
 	
 #endif
 };
+
+extern struct DallasTemperature DS18B20;
 #endif

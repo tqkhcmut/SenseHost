@@ -33,6 +33,9 @@
 #include "packet.h"
 #include "rs485.h"
 #include "gas_lighting.h"
+#include "one_wire.h"
+#include "DallasTemperature.h"
+#include "uart.h"
 
 /* Private defines -----------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
@@ -43,21 +46,28 @@
 
 void main(void)
 {
-	CLK_HSIPrescalerConfig(CLK_PRESCALER_HSIDIV1);
-	
-	GPIO_Init(LED_RUN_PORT, LED_RUN_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);
-	Delay_Init();
-	RS485_Init(115200);
-	GasLighting_Init();
-		
-	/* Infinite loop */
-	while (1)
-	{
-		LED_RUN_TOGGLE;
-		Delay(100);
-//		RS485_SendNum(Conversion_Value);
-	}
-	
+  CLK_HSIPrescalerConfig(CLK_PRESCALER_HSIDIV1);
+  
+  GPIO_Init(LED_RUN_PORT, LED_RUN_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);
+  Delay_Init();
+  RS485_Init(115200);
+  UART_Init(115200);
+  GasLighting_Init();
+  _one_wire.Init();
+  DS18B20.Init(&_one_wire);
+  
+  UART_SendStr("Sensor Host.\n");
+  /* Infinite loop */
+  while (1)
+  {
+    LED_RUN_TOGGLE;
+    Delay(100);
+    UART_SendStr("\nGas Value: ");
+    UART_SendFloat(GasLighting_GetGas());
+    UART_SendStr("\nLighting Value: ");
+    UART_SendFloat(GasLighting_GetLighting());
+  }
+  
 }
 
 #ifdef USE_FULL_ASSERT
@@ -71,13 +81,13 @@ void main(void)
 */
 void assert_failed(u8* file, u32 line)
 { 
-	/* User can add his own implementation to report the file name and line number,
-	ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-	
-	/* Infinite loop */
-	while (1)
-	{
-	}
+  /* User can add his own implementation to report the file name and line number,
+  ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  
+  /* Infinite loop */
+  while (1)
+  {
+  }
 }
 #endif
 

@@ -13,7 +13,7 @@ __IO unsigned char rs485_rx_len;
 void RS485_Init(unsigned long baudrate)
 {
   GPIO_Init(RS485_CE_PORT, RS485_CE_PIN, GPIO_MODE_IN_FL_NO_IT);
-	GPIO_Init(RS485_DIR_PORT, RS485_DIR_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);
+  GPIO_Init(RS485_DIR_PORT, RS485_DIR_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);
   RS485_DIR_INPUT;
   
   /* Deinitializes the UART1 peripheral */
@@ -49,20 +49,21 @@ int RS485_Available(void)
 {
   return rs485_rx_len;
 }
-int RS485_GetData(char * buffer, int len)
+int RS485_GetData(char * buffer)
 {
 //  memcpy((void *)buffer, (void const *)rs485_rx_buff, len);
 //  memset((void *)rs485_rx_buff, 0, RS485_BUFF_SIZE);
   int i;
-  for (i = 0; i < len; i++)
+  for (i = 0; i < rs485_rx_len; i++)
   {
     buffer[i] = rs485_rx_buff[i];
   }
-  return len;
+  rs485_rx_len = 0;
+  return i;
 }
 void RS485_Flush(void)
 {
-	rs485_rx_len = 0;
+  rs485_rx_len = 0;
 }
 
 void RS485_SendChar(char c)

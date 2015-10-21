@@ -425,17 +425,17 @@ INTERRUPT_HANDLER(I2C_IRQHandler, 19)
     */
  }
 
-/**
-  * @brief UART3 RX interrupt routine.
-  * @param  None
-  * @retval None
-  */
- INTERRUPT_HANDLER(UART3_RX_IRQHandler, 21)
- {
-    /* In order to detect unexpected events during development,
-       it is recommended to set a breakpoint on the following instruction.
-    */
- }
+///**
+//  * @brief UART3 RX interrupt routine.
+//  * @param  None
+//  * @retval None
+//  */
+// INTERRUPT_HANDLER(UART3_RX_IRQHandler, 21)
+// {
+//    /* In order to detect unexpected events during development,
+//       it is recommended to set a breakpoint on the following instruction.
+//    */
+// }
 #endif /* (STM8S208) || (STM8S207) || (STM8AF52Ax) || (STM8AF62Ax) */
 
 #if defined(STM8S207) || defined(STM8S007) || defined(STM8S208) || defined (STM8AF52Ax) || defined (STM8AF62Ax)

@@ -46,26 +46,16 @@
 #endif
 
 #if defined(USE_STDPERIPH_DRIVER)
-#define	ONEWIRE_PIN				GPIO_Pin_0
-#define ONEWIRE_GPIO			GPIOB
-
-uint8_t	DIRECT_READ(void);
-void	DIRECT_MODE_INPUT(void);
-void	DIRECT_MODE_OUTPUT(void);
-void	DIRECT_WRITE_LOW(void);
-void	DIRECT_WRITE_HIGH(void);
-
-#elif defined(STM8S207)
-
 #define	ONEWIRE_PIN				GPIO_PIN_1
 #define ONEWIRE_GPIO			GPIOC
 
-#define 	DIRECT_READ() 				{return GPIO_ReadInputPin(ONEWIRE_GPIO, ONEWIRE_PIN);}
+#define 	DIRECT_READ()           GPIO_ReadInputPin(ONEWIRE_GPIO, ONEWIRE_PIN)
 #define 	DIRECT_MODE_INPUT() 	{GPIO_Init(ONEWIRE_GPIO, ONEWIRE_PIN, GPIO_MODE_IN_FL_NO_IT);}
 #define 	DIRECT_MODE_OUTPUT()	{GPIO_Init(ONEWIRE_GPIO, ONEWIRE_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);}
 #define 	DIRECT_WRITE_LOW()		{GPIO_WriteLow(ONEWIRE_GPIO, ONEWIRE_PIN);}
 #define 	DIRECT_WRITE_HIGH()		{GPIO_WriteHigh(ONEWIRE_GPIO, ONEWIRE_PIN);}
 
+#else
 #error "Please define I/O register types here"
 #endif
 	

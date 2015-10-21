@@ -774,3 +774,50 @@ void DallasTemperature_begin(void)
 		}
 	}
 }
+
+struct DallasTemperature DS18B20 = 
+{
+  .Init = DallasTemperature_Init,
+  .begin = DallasTemperature_begin,
+  .getDeviceCount = DallasTemperature_getDeviceCount,
+  .isConversionComplete = 0,
+  .validAddress = DallasTemperature_validAddress,
+  .getAddress = DallasTemperature_getAddress,
+  .isConnected1 = DallasTemperature_isConnected1,
+  .isConnected2 = DallasTemperature_isConnected2,
+  .readScratchPad = DallasTemperature_readScratchPad,
+  .writeScratchPad = DallasTemperature_writeScratchPad,
+  .readPowerSupply = DallasTemperature_readPowerSupply,
+  .getResolution1 = DallasTemperature_getResolution1,
+  .setResolution1 = DallasTemperature_setResolution1,
+  .getResolution2 = DallasTemperature_getResolution2,
+  .setResolution2 = DallasTemperature_setResolution2,
+  .setWaitForConversion = DallasTemperature_setWaitForConversion,
+  .getWaitForConversion = DallasTemperature_getWaitForConversion,
+  .setCheckForConversion = DallasTemperature_setCheckForConversion,
+  .getCheckForConversion = DallasTemperature_getCheckForConversion,
+  .requestTemperatures = DallasTemperature_requestTemperatures,
+  .requestTemperaturesByAddress = DallasTemperature_requestTemperaturesByAddress,
+  .requestTemperaturesByIndex = DallasTemperature_requestTemperaturesByIndex,
+  .getTempC = DallasTemperature_getTempC,
+  .getTempF = DallasTemperature_getTempF,
+  .getTempCByIndex = DallasTemperature_getTempCByIndex,
+  .getTempFByIndex = DallasTemperature_getTempFByIndex,
+  .isParasitePowerMode = DallasTemperature_isParasitePowerMode,
+  .isConversionAvailable = DallasTemperature_isConversionAvailable,
+#if REQUIRESALARMS
+  .setHighAlarmTemp = DallasTemperature_setHighAlarmTemp,
+  .setLowAlarmTemp = DallasTemperature_setLowAlarmTemp,
+  .getHighAlarmTemp = DallasTemperature_getHighAlarmTemp,
+  .getLowAlarmTemp = DallasTemperature_getLowAlarmTemp,
+  .resetAlarmSearch = DallasTemperature_resetAlarmSearch,
+  .alarmSearch = DallasTemperature_alarmSearch,
+  .hasAlarm1 = DallasTemperature_hasAlarm1,
+  .hasAlarm2 = DallasTemperature_hasAlarm2,
+  .processAlarms = DallasTemperature_processAlarms,
+  .setAlarmHandler = DallasTemperature_setAlarmHandler,
+  .defaultAlarmHandler = DallasTemperature_defaultAlarmHandler,
+#endif
+  .toFahrenheit = DallasTemperature_toFahrenheit,
+  .toCelsius = DallasTemperature_toCelsius
+};
