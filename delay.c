@@ -43,10 +43,15 @@ INTERRUPT_HANDLER(TIM4_UPD_OVF_IRQHandler, 23)
   TIM4_ClearITPendingBit(TIM4_IT_UPDATE);
 }
 
-void Delay(int ms_time)
+void Delay(unsigned int ms_time)
 {
   delay_count = ms_time + 1;
   while(delay_count);
+}
+void DelayUs(unsigned int time)
+{
+	unsigned int count_us = time * 16;
+	while (count_us--);
 }
 unsigned int Millis(void)
 {
