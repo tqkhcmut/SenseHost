@@ -38,7 +38,10 @@ float GasLighting_GetGas(void)
 	while (ADC2_GetFlagStatus() == RESET);
 	Conversion_Value = ADC2_GetConversionValue();
 	ADC2_ClearFlag();
-	return Conversion_Value;
+//  res = Conversion_Value * 5 / 1024;
+//  res = (5 - res) * 10000 / res;
+//  res = 1024/Conversion_Value - 1;
+	return 10240.0/Conversion_Value - 10.0;
 }
 float GasLighting_GetLighting(void)
 {
@@ -59,7 +62,7 @@ float GasLighting_GetLighting(void)
 	// 1lux - 0.002V
 	// 1000lux - 2v
 	// x = 2.44141 * ADC value
-	
+	// RL = 10K
 	return Conversion_Value * 2.44141;
 }
 

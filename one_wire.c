@@ -1,7 +1,7 @@
 #include "one_wire.h"
 #include "delay.h"
 
-#ifdef ONEWIRE_SEARCH
+#if ONEWIRE_SEARCH
 	// global search state
 	unsigned char ROM_NO[8];
 	uint8_t LastDiscrepancy;
@@ -165,7 +165,7 @@ void OneWire_depower()
 
 }
 
-#ifdef ONEWIRE_SEARCH
+#if ONEWIRE_SEARCH
 
 //
 // You need to use this function to start a search again from the beginning.
@@ -333,12 +333,12 @@ uint8_t OneWire_search(uint8_t *newAddr)
 
 #endif
 
-#ifdef ONEWIRE_CRC
+#if ONEWIRE_CRC
 // The 1-Wire CRC scheme is described in Maxim Application Note 27:
 // "Understanding and Using Cyclic Redundancy Checks with Maxim iButton Products"
 //
 
-#ifdef ONEWIRE_CRC8_TABLE
+#if ONEWIRE_CRC8_TABLE
 // This table comes from Dallas sample code where it is freely reusable,
 // though Copyright (C) 2000 Dallas Semiconductor Corporation
 static const uint8_t PROGMEM dscrc_table[] = {
@@ -397,7 +397,7 @@ uint8_t OneWire_crc8(const uint8_t *addr, uint8_t len)
 }
 #endif
 
-#ifdef ONEWIRE_CRC16
+#if ONEWIRE_CRC16
 
 uint16_t OneWire_crc16(const uint8_t* input, uint16_t len, uint16_t crc)
 {
@@ -433,7 +433,7 @@ bool OneWire_check_crc16(const uint8_t* input, uint16_t len, const uint8_t* inve
 
 void OneWire_Init(void)
 {
-#ifdef ONEWIRE_SEARCH
+#if ONEWIRE_SEARCH
 	OneWire_reset_search();
 #endif
 }
@@ -451,14 +451,14 @@ struct OneWire _one_wire =
 	.write_bit = OneWire_write_bit,
 	.read_bit = OneWire_read_bit,
 	.depower = OneWire_depower,
-#ifdef ONEWIRE_SEARCH
+#if ONEWIRE_SEARCH
 	.reset_search = OneWire_reset_search,
 	.target_search = OneWire_target_search,
 	.search = OneWire_search,
 #endif 
-#ifdef ONEWIRE_CRC
+#if ONEWIRE_CRC
 	.crc8 = OneWire_crc8,
-#ifdef ONEWIRE_CRC16
+#if ONEWIRE_CRC16
 	.check_crc16 = OneWire_check_crc16,
 	.crc16 = OneWire_crc16
 #endif 

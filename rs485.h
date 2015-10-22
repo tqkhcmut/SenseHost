@@ -2,6 +2,12 @@
 #define _rs485_h_
 
 #include "stm8s.h"
+#include "delay.h"
+
+#define RS485_DIR_PORT          GPIOA
+#define RS485_DIR_PIN           GPIO_PIN_6
+#define RS485_DIR_INPUT         {_delay_us(10); GPIO_WriteLow(RS485_DIR_PORT, RS485_DIR_PIN);}
+#define RS485_DIR_OUTPUT        {GPIO_WriteHigh(RS485_DIR_PORT, RS485_DIR_PIN); _delay_us(1);}
 
 #ifndef BYTE_FORMAT
 

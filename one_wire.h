@@ -3,30 +3,30 @@
 
 #include "stm8s.h"
 
-//// you can exclude onewire_search by defining that to 0
-//#ifndef ONEWIRE_SEARCH
-#define ONEWIRE_SEARCH
-//#endif
-//
-//// You can exclude CRC checks altogether by defining this to 0
-//#ifndef ONEWIRE_CRC
-#define ONEWIRE_CRC
-//#endif
-//
-//// Select the table-lookup method of computing the 8-bit CRC
-//// by setting this to 1.  The lookup table enlarges code size by
-//// about 250 bytes.  It does NOT consume RAM (but did in very
-//// old versions of OneWire).  If you disable this, a slower
-//// but very compact algorithm is used.
-//#ifndef ONEWIRE_CRC8_TABLE
-#define ONEWIRE_CRC8_TABLE
-//#endif
-//
-//// You can allow 16-bit CRC checks by defining this to 1
-//// (Note that ONEWIRE_CRC must also be 1.)
-//#ifndef ONEWIRE_CRC16
-#define ONEWIRE_CRC16
-//#endif
+// you can exclude onewire_search by defining that to 0
+#ifndef ONEWIRE_SEARCH
+#define ONEWIRE_SEARCH 1
+#endif
+
+// You can exclude CRC checks altogether by defining this to 0
+#ifndef ONEWIRE_CRC
+#define ONEWIRE_CRC   1
+#endif
+
+// Select the table-lookup method of computing the 8-bit CRC
+// by setting this to 1.  The lookup table enlarges code size by
+// about 250 bytes.  It does NOT consume RAM (but did in very
+// old versions of OneWire).  If you disable this, a slower
+// but very compact algorithm is used.
+#ifndef ONEWIRE_CRC8_TABLE
+#define ONEWIRE_CRC8_TABLE 1
+#endif
+
+// You can allow 16-bit CRC checks by defining this to 1
+// (Note that ONEWIRE_CRC must also be 1.)
+#ifndef ONEWIRE_CRC16
+#define ONEWIRE_CRC16 1
+#endif
 
 //#ifndef bool
 //typedef enum 
@@ -101,7 +101,7 @@ struct OneWire
 	// someone shorts your bus.
 	void (* depower)(void);
 	
-#ifdef ONEWIRE_SEARCH
+#if ONEWIRE_SEARCH
 	// Clear the search state so that if will start from the beginning again.
 	void (* reset_search)(void);
 	
@@ -118,12 +118,12 @@ struct OneWire
 	uint8_t (* search)(uint8_t *newAddr);
 #endif
 	
-#ifdef ONEWIRE_CRC
+#if ONEWIRE_CRC
 	// Compute a Dallas Semiconductor 8 bit CRC, these are used in the
 	// ROM and scratchpad registers.
 	uint8_t (* crc8)(const uint8_t *addr, uint8_t len);
 	
-#ifdef ONEWIRE_CRC16
+#if ONEWIRE_CRC16
 	// Compute the 1-Wire CRC16 and compare it against the received CRC.
 	// Example usage (reading a DS2408):
 	//    // Put everything in a buffer so we can compute the CRC easily.

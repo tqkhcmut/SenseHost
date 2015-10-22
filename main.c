@@ -44,6 +44,38 @@
 #define LED_RUN_PIN			GPIO_PIN_0
 #define LED_RUN_TOGGLE	{GPIO_WriteReverse(LED_RUN_PORT, LED_RUN_PIN);}
 
+typedef unsigned char byte;
+
+// arrays to hold device address
+DeviceAddress insideThermometer;
+
+// function to print the temperature for a device
+void printTemperature(DeviceAddress deviceAddress)
+{
+  // method 1 - slower
+  //Serial.print("Temp C: ");
+  //Serial.print(sensors.getTempC(deviceAddress));
+  //Serial.print(" Temp F: ");
+  //Serial.print(sensors.getTempF(deviceAddress)); // Makes a second call to getTempC and then converts to Fahrenheit
+
+  // method 2 - faster
+  float tempC = DS18B20.getTempC(deviceAddress);
+  UART_SendStr("Temp C: ");
+  UART_SendFloat(tempC);
+  UART_SendStr(" Temp F: ");
+  UART_SendFloat(DS18B20.toFahrenheit(tempC)); // Converts tempC to Fahrenheit
+  UART_SendStr("\n");
+}
+
+// function to print a device address
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    UART_SendByte(deviceAddress[i], HEX);
+  }
+}
+
 void main(void)
 {
   CLK_HSIPrescalerConfig(CLK_PRESCALER_HSIDIV1);
@@ -57,16 +89,89 @@ void main(void)
   DS18B20.Init(&_one_wire);
   
   UART_SendStr("Sensor Host.\n");
+  
+  // locate devices on the bus
+  UART_SendStr("Locating devices...");
+  DS18B20.begin();
+  UART_SendStr("Found ");
+  UART_SendByte(DS18B20.getDeviceCount(), DEC);
+  UART_SendStr(" devices.\n");
+
+  // report parasite power requirements
+  UART_SendStr("Parasite power is: "); 
+  if (DS18B20.isParasitePowerMode())
+    UART_SendStr("ON\n");
+  else
+   UART_SendStr("OFF\n");
+  
+  // assign address manually.  the addresses below will beed to be changed
+  // to valid device addresses on your bus.  device address can be retrieved
+  // by using either oneWire.search(deviceAddress) or individually via
+  // sensors.getAddress(deviceAddress, index)
+  //insideThermometer = { 0x28, 0x1D, 0x39, 0x31, 0x2, 0x0, 0x0, 0xF0 };
+
+  // Method 1:
+  // search for devices on the bus and assign based on an index.  ideally,
+  // you would do this to initially discover addresses on the bus and then 
+  // use those addresses and manually assign them (see above) once you know 
+  // the devices on your bus (and assuming they don't change).
+  if (!DS18B20.getAddress(insideThermometer, 0)) 
+    UART_SendStr("Unable to find address for Device 0\n"); 
+  
+  // method 2: search()
+  // search() looks for the next device. Returns 1 if a new address has been
+  // returned. A zero might mean that the bus is shorted, there are no devices, 
+  // or you have already retrieved all of them.  It might be a good idea to 
+  // check the CRC to make sure you didn't get garbage.  The order is 
+  // deterministic. You will always get the same devices in the same order
+  //
+  // Must be called before search()
+  //oneWire.reset_search();
+  // assigns the first address found to insideThermometer
+  //if (!oneWire.search(insideThermometer)) Serial.println("Unable to find address for insideThermometer");
+
+  // show the addresses we found on the bus
+  UART_SendStr("Device 0 Address: ");
+  printAddress(insideThermometer);
+  UART_SendStr("\n");
+
+  // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
+  DS18B20.setResolution2(insideThermometer, 9);
+ 
+  UART_SendStr("Device 0 Resolution: ");
+  UART_SendByte(DS18B20.getResolution2(insideThermometer), DEC); 
+  UART_SendStr("\n");
+  
   /* Infinite loop */
   while (1)
-  {
+  {    
+    // call sensors.requestTemperatures() to issue a global temperature 
+    // request to all devices on the bus
+    UART_SendStr("\nRequesting temperatures...");
+    DS18B20.requestTemperatures(); // Send the command to get temperatures
+    UART_SendStr("DONE\n");
+    
+    // It responds almost immediately. Let's print out the data
+    printTemperature(insideThermometer); // Use a simple function to print out the data
+    
+  
     LED_RUN_TOGGLE;
     Delay(100);
     UART_SendStr("\nGas Value: ");
     UART_SendFloat(GasLighting_GetGas());
+    UART_SendStr(" kppm.\n");
     UART_SendStr("\nLighting Value: ");
     UART_SendFloat(GasLighting_GetLighting());
-    UART_SendStr(" Lux.");
+    UART_SendStr(" Lux.\n");
+    
+    
+    RS485_DIR_OUTPUT;
+    RS485_SendStr("\nGas Value: ");
+    RS485_SendFloat(GasLighting_GetGas());
+    RS485_SendStr("\nLighting Value: ");
+    RS485_SendFloat(GasLighting_GetLighting());
+    RS485_SendStr(" Lux.");
+    RS485_DIR_INPUT;
   }
   
 }

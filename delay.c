@@ -50,7 +50,7 @@ void Delay(unsigned int ms_time)
 }
 void DelayUs(unsigned int time)
 {
-	unsigned int count_us = time * 16;
+	unsigned int count_us = time * CLK_GetClockFreq()/1000000;
 	while (count_us--);
 }
 unsigned int Millis(void)

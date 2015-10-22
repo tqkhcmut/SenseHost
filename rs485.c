@@ -4,12 +4,6 @@
 __IO unsigned char rs485_rx_buff[RS485_BUFF_SIZE];
 __IO unsigned char rs485_rx_len; 
 
-#define RS485_DIR_PORT          GPIOA
-#define RS485_DIR_PIN           GPIO_PIN_6
-#define RS485_DIR_INPUT         GPIO_WriteLow(RS485_DIR_PORT, RS485_DIR_PIN)
-#define RS485_DIR_OUTPUT        GPIO_WriteHigh(RS485_DIR_PORT, RS485_DIR_PIN)
-
-
 void RS485_Init(unsigned long baudrate)
 {
   GPIO_Init(RS485_CE_PORT, RS485_CE_PIN, GPIO_MODE_IN_FL_NO_IT);
@@ -58,7 +52,6 @@ int RS485_GetData(char * buffer)
   {
     buffer[i] = rs485_rx_buff[i];
   }
-  rs485_rx_len = 0;
   return i;
 }
 void RS485_Flush(void)
@@ -68,25 +61,18 @@ void RS485_Flush(void)
 
 void RS485_SendChar(char c)
 {
-  RS485_DIR_OUTPUT;
   
   UART1_SendData8(c);
   while (UART1_GetFlagStatus(UART1_FLAG_TXE) == RESET);
-  
-  RS485_DIR_INPUT;
 }
 
 void RS485_SendStr(char Str[])
-{
-  RS485_DIR_OUTPUT;
-  
+{  
   while(*Str)
   {
     UART1_SendData8(*Str++);
     while (UART1_GetFlagStatus(UART1_FLAG_TXE) == RESET);
   }
-  
-  RS485_DIR_INPUT;
 }
 
 void RS485_SendNum(int num)
