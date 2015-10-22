@@ -66,6 +66,7 @@ void main(void)
     UART_SendFloat(GasLighting_GetGas());
     UART_SendStr("\nLighting Value: ");
     UART_SendFloat(GasLighting_GetLighting());
+    UART_SendStr(" Lux.");
   }
   
 }
