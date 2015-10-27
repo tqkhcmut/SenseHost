@@ -5,27 +5,27 @@ __IO unsigned int delay_count = 0;
 
 void Delay_Init(void)
 {
-  /* TIM4 configuration:
-  - TIM4CLK is set to 16 MHz, the TIM4 Prescaler is equal to 128 so the TIM1 counter
-  clock used is 16 MHz / 128 = 125 000 Hz
-  - With 125 000 Hz we can generate time base:
-  max time base is 2.048 ms if TIM4_PERIOD = 255 --> (255 + 1) / 125000 = 2.048 ms
-  min time base is 0.016 ms if TIM4_PERIOD = 1   --> (  1 + 1) / 125000 = 0.016 ms
+   /* TIM3 configuration:
+   - TIM3CLK is set to 16 MHz, the TIM3 Prescaler is equal to 16 so the TIM3 counter
+   clock used is 16 MHz / 16 = 1 000 000 Hz
+  - With 1 000 000 Hz we can generate time base:
+      max time base is 65.536 ms if TIM3_PERIOD = 65535 --> (65535 + 1) / 1000000 = 65.536 ms
+      min time base is 0.002 ms if TIM3_PERIOD = 1   --> (  1 + 1) / 1000000 = 0.002 ms = 2us
   - In this example we need to generate a time base equal to 1 ms
-  so TIM4_PERIOD = (0.001 * 125000 - 1) = 124 */
+   so TIM3_PERIOD = (0.001 * 1000000 - 1) = 999 */
   
   /* Time base configuration */
-  TIM4_TimeBaseInit(TIM4_PRESCALER_128, 124);
-  /* Clear TIM4 update flag */
-  TIM4_ClearFlag(TIM4_FLAG_UPDATE);
+  TIM3_TimeBaseInit(TIM3_PRESCALER_16, 999);
+  /* Clear TIM3 update flag */
+  TIM3_ClearFlag(TIM3_FLAG_UPDATE);
   /* Enable update interrupt */
-  TIM4_ITConfig(TIM4_IT_UPDATE, ENABLE);
+  TIM3_ITConfig(TIM3_IT_UPDATE, ENABLE);
   
   /* enable interrupts */
   enableInterrupts();
   
-  /* Enable TIM4 */
-  TIM4_Cmd(ENABLE);
+  /* Enable TIM3 */
+  TIM3_Cmd(ENABLE);
 }
 
 /**
@@ -35,12 +35,21 @@ void Delay_Init(void)
 */
 INTERRUPT_HANDLER(TIM4_UPD_OVF_IRQHandler, 23)
 {
+}
+
+/**
+  * @brief Timer3 Update/Overflow/Break Interrupt routine.
+  * @param  None
+  * @retval None
+  */
+ INTERRUPT_HANDLER(TIM3_UPD_OVF_BRK_IRQHandler, 15)
+{
   tick_ms++;
   if (delay_count)
     delay_count--;
   
   /* Cleat Interrupt Pending bit */
-  TIM4_ClearITPendingBit(TIM4_IT_UPDATE);
+  TIM3_ClearITPendingBit(TIM3_IT_UPDATE);
 }
 
 void Delay(unsigned int ms_time)
@@ -50,10 +59,25 @@ void Delay(unsigned int ms_time)
 }
 void DelayUs(unsigned int time)
 {
-	unsigned int count_us = time * CLK_GetClockFreq()/1000000;
-	while (count_us--);
+  if (time < 1000)
+  {
+    TIM3_SetCounter(0);
+    while (TIM3_GetCounter() < time);
+  }
+  else
+  {
+    unsigned int ms, us;
+    ms = time / 1000;
+    us = time % 1000;
+    delay(ms);
+    DelayUs(us);
+  }
 }
 unsigned int Millis(void)
 {
   return tick_ms;
+}
+unsigned int Micros(void)
+{
+  return tick_ms * 1000 + TIM3_GetCounter();
 }

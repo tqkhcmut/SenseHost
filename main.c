@@ -78,6 +78,7 @@ void printAddress(DeviceAddress deviceAddress)
 
 void main(void)
 {
+//  int i;
   CLK_HSIPrescalerConfig(CLK_PRESCALER_HSIDIV1);
   
   GPIO_Init(LED_RUN_PORT, LED_RUN_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);
@@ -156,7 +157,9 @@ void main(void)
     
   
     LED_RUN_TOGGLE;
-    Delay(100);
+    Delay(1000);
+//    for (i = 0; i < 1000; i++)
+//      DelayUs(999);
     UART_SendStr("\nGas Value: ");
     UART_SendFloat(GasLighting_GetGas());
     UART_SendStr(" kppm.\n");
