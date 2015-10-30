@@ -54,7 +54,7 @@ INTERRUPT_HANDLER(TIM4_UPD_OVF_IRQHandler, 23)
 
 void Delay(unsigned int ms_time)
 {
-  delay_count = ms_time + 1;
+  delay_count = ms_time;
   while(delay_count);
 }
 void DelayUs(unsigned int time)
@@ -72,6 +72,9 @@ void DelayUs(unsigned int time)
     delay(ms);
     DelayUs(us);
   }
+	
+//	unsigned int count_us = time;// * CLK_GetClockFreq()/1000000;
+//	while (count_us--);
 }
 unsigned int Millis(void)
 {

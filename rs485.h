@@ -9,6 +9,9 @@
 #define RS485_DIR_INPUT         {_delay_us(10); GPIO_WriteLow(RS485_DIR_PORT, RS485_DIR_PIN);}
 #define RS485_DIR_OUTPUT        {GPIO_WriteHigh(RS485_DIR_PORT, RS485_DIR_PIN); _delay_us(1);}
 
+#define RS485_SEL_PORT					GPIOA
+#define RS485_SEL_PIN						GPIO_PIN_3
+
 #ifndef BYTE_FORMAT
 
 #define BIN     0
@@ -30,10 +33,6 @@ int RS485_GetData(char * buffer);
 int RS485_SendData(char * buffer, int len);
 void RS485_Flush(void);
 
-// expand function
-#define RS485_CE_PORT		GPIOA
-#define RS485_CE_PIN		GPIO_PIN_3
-#define RS485_IsActive() {return (GPIO_ReadInputPin(RS485_CE_PORT, RS485_CE_PIN) == RESET)}
 
 #endif
 

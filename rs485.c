@@ -6,7 +6,7 @@ __IO unsigned char rs485_rx_len;
 
 void RS485_Init(unsigned long baudrate)
 {
-  GPIO_Init(RS485_CE_PORT, RS485_CE_PIN, GPIO_MODE_IN_FL_NO_IT);
+  GPIO_Init(RS485_SEL_PORT, RS485_SEL_PIN, GPIO_MODE_IN_FL_NO_IT);
   GPIO_Init(RS485_DIR_PORT, RS485_DIR_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);
   RS485_DIR_INPUT;
   
@@ -37,8 +37,6 @@ INTERRUPT_HANDLER(UART1_RX_IRQHandler, 18)
   }
   UART1_ClearITPendingBit(UART1_IT_RXNE);
 }
-
-
 int RS485_Available(void)
 {
   return rs485_rx_len;
@@ -48,15 +46,29 @@ int RS485_GetData(char * buffer)
 //  memcpy((void *)buffer, (void const *)rs485_rx_buff, len);
 //  memset((void *)rs485_rx_buff, 0, RS485_BUFF_SIZE);
   int i;
+  disableInterrupts();
   for (i = 0; i < rs485_rx_len; i++)
   {
     buffer[i] = rs485_rx_buff[i];
   }
+	enableInterrupts();
   return i;
 }
+
+int RS485_SendData(char * buffer, int len)
+{
+  int i;
+  for (i = 0; i < len; i++)
+  {
+    UART3_SendData8(buffer[i]);
+    while (UART3_GetFlagStatus(UART3_FLAG_TXE) == RESET);
+  }
+  return i;
+}
+
 void RS485_Flush(void)
 {
-  rs485_rx_len = 0;
+	rs485_rx_len = 0;
 }
 
 void RS485_SendChar(char c)
