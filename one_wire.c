@@ -19,12 +19,12 @@ void 	DIRECT_MODE_OUTPUT(void)
 }
 void 	DIRECT_WRITE_LOW(void)
 {
-	DIRECT_MODE_OUTPUT();
+//	DIRECT_MODE_OUTPUT();
 	GPIO_WriteLow(ONEWIRE_GPIO, ONEWIRE_PIN);
 }
 void 	DIRECT_WRITE_HIGH(void)
 {
-	DIRECT_MODE_OUTPUT();
+//	DIRECT_MODE_OUTPUT();
 	GPIO_WriteHigh(ONEWIRE_GPIO, ONEWIRE_PIN);
 }
 
@@ -54,8 +54,8 @@ uint8_t OneWire_reset(void)
 		_delay_us(2);
 	} while ( !DIRECT_READ());
 	
-	DIRECT_WRITE_LOW();
 	DIRECT_MODE_OUTPUT();	// drive output low
+	DIRECT_WRITE_LOW();
 	
 	_delay_us(480);
 	
@@ -76,16 +76,16 @@ void OneWire_write_bit(uint8_t v)
 {
 	if (v & 1) {
 		
-		DIRECT_WRITE_LOW();
 		DIRECT_MODE_OUTPUT();	// drive output low
+		DIRECT_WRITE_LOW();
 		_delay_us(10);
 		DIRECT_WRITE_HIGH();	// drive output high
 		
 		_delay_us(55);
 	} else {
 		
-		DIRECT_WRITE_LOW();
 		DIRECT_MODE_OUTPUT();	// drive output low
+		DIRECT_WRITE_LOW();
 		_delay_us(65);
 		DIRECT_WRITE_HIGH();	// drive output high
 		
