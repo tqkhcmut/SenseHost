@@ -14,6 +14,6 @@ unsigned int Micros(void);
 #define _delay_us	DelayUs
 #define millis		Millis
 #define micros    Micros
-#define delayMicroseconds DelayUs
+//#define delayMicroseconds DelayUs
 
 #endif

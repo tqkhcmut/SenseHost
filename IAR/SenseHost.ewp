@@ -1794,12 +1794,6 @@
   <group>
     <name>Temperature</name>
     <file>
-      <name>$PROJ_DIR$\..\DallasTemperature.c</name>
-    </file>
-    <file>
-      <name>$PROJ_DIR$\..\DallasTemperature.h</name>
-    </file>
-    <file>
       <name>$PROJ_DIR$\..\one_wire.c</name>
     </file>
     <file>

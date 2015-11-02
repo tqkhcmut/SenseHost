@@ -34,13 +34,13 @@
 #include "rs485.h"
 #include "gas_lighting.h"
 #include "one_wire.h"
-#include "DallasTemperature.h"
 #include "uart.h"
 
 /* Private defines -----------------------------------------------------------*/
 #ifndef DEBUG
 #define DEBUG	1
 #endif
+
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 #define LED_RUN_PORT		GPIOD
@@ -48,9 +48,6 @@
 #define LED_RUN_TOGGLE	{GPIO_WriteReverse(LED_RUN_PORT, LED_RUN_PIN);}
 
 typedef unsigned char byte;
-
-// arrays to hold device address
-DeviceAddress insideThermometer;
 
 // 
 struct ThesisData mydata, * pdata;
@@ -64,28 +61,13 @@ struct Packet * packet;
 unsigned int tmp_time;
 #endif
 
-#if DEBUG
-// function to print the temperature for a device
-void printTemperature(DeviceAddress deviceAddress)
-{
-	// method 2 - faster
-	float tempC = DS18B20.getTempC(deviceAddress);
-	UART_SendStr("Temp C: ");
-	UART_SendFloat(tempC);
-	UART_SendStr(" Temp F: ");
-	UART_SendFloat(DS18B20.toFahrenheit(tempC)); // Converts tempC to Fahrenheit
-	UART_SendStr("\n");
-}
 
-// function to print a device address
-void printAddress(DeviceAddress deviceAddress)
-{
-	for (uint8_t i = 0; i < 8; i++)
-	{
-		UART_SendByte(deviceAddress[i], HEX);
-	}
-}
-#endif
+byte i;
+byte present = 0;
+byte type_s;
+byte data[12];
+byte addr[8];
+float celsius, fahrenheit;
 
 void main(void)
 {
@@ -97,9 +79,7 @@ void main(void)
 	RS485_Init(115200);
 	UART_Init(115200);
 	GasLighting_Init();
-	_one_wire.Init();
-	DS18B20.Init(&_one_wire);
-	DS18B20.begin();
+	OneWire_Init();
 	
 	flash_read_buffer((char *)&flash_data, sizeof (struct flash_data));
 	if (flash_data.id == BROADCAST_ID)
@@ -107,76 +87,11 @@ void main(void)
 		// get default id
 		flash_data.id = DEV_MY_THESIS | 0x01;
 	}
-	
-#if DEBUG
-	UART_SendStr("Sensor Host.\n");
-	
-	// locate devices on the bus
-	UART_SendStr("Locating devices...");
-	UART_SendStr("Found ");
-	UART_SendByte(DS18B20.getDeviceCount(), DEC);
-	UART_SendStr(" devices.\n");
-	
-	// report parasite power requirements
-	UART_SendStr("Parasite power is: "); 
-	if (DS18B20.isParasitePowerMode())
-		UART_SendStr("ON\n");
-	else
-		UART_SendStr("OFF\n");
-	
-	// assign address manually.  the addresses below will beed to be changed
-	// to valid device addresses on your bus.  device address can be retrieved
-	// by using either oneWire.search(deviceAddress) or individually via
-	// sensors.getAddress(deviceAddress, index)
-	//insideThermometer = { 0x28, 0x1D, 0x39, 0x31, 0x2, 0x0, 0x0, 0xF0 };
-	
-	// Method 1:
-	// search for devices on the bus and assign based on an index.  ideally,
-	// you would do this to initially discover addresses on the bus and then 
-	// use those addresses and manually assign them (see above) once you know 
-	// the devices on your bus (and assuming they don't change).
-	if (!DS18B20.getAddress(insideThermometer, 0)) 
-		UART_SendStr("Unable to find address for Device 0\n"); 
-	
-	// method 2: search()
-	// search() looks for the next device. Returns 1 if a new address has been
-	// returned. A zero might mean that the bus is shorted, there are no devices, 
-	// or you have already retrieved all of them.  It might be a good idea to 
-	// check the CRC to make sure you didn't get garbage.  The order is 
-	// deterministic. You will always get the same devices in the same order
-	//
-	// Must be called before search()
-	//oneWire.reset_search();
-	// assigns the first address found to insideThermometer
-	//if (!oneWire.search(insideThermometer)) Serial.println("Unable to find address for insideThermometer");
-	
-	// show the addresses we found on the bus
-	UART_SendStr("Device 0 Address: ");
-	printAddress(insideThermometer);
-	UART_SendStr("\n");
-	
-	// set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
-	DS18B20.setResolution2(insideThermometer, 9);
-	
-	UART_SendStr("Device 0 Resolution: ");
-	UART_SendByte(DS18B20.getResolution2(insideThermometer), DEC); 
-	UART_SendStr("\n");
-#else
-	// Must be called before search()
-	_one_wire.reset_search();
-	// assigns the first address found to insideThermometer
-	if (!_one_wire.search(insideThermometer))
-	{
-		// unable to find address
-	}
-	// set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
-	DS18B20.setResolution2(insideThermometer, 9);
-#endif
-	
+		
 	/* Infinite loop */
 	while (1)
 	{    
-#if DEBUG
+#if DEBUG	
 		UART_SendStr("\nGas Value: ");
 		UART_SendFloat(GasLighting_GetGas());
 		UART_SendStr(" kppm.\n");
@@ -193,18 +108,99 @@ void main(void)
 		RS485_SendStr(" Lux.");
 		RS485_DIR_INPUT;
 		
-		// call sensors.requestTemperatures() to issue a global temperature 
-		// request to all devices on the bus
-		UART_SendStr("\nRequesting temperatures...");
-		DS18B20.requestTemperatures(); // Send the command to get temperatures
-		UART_SendStr("DONE\n");
-		
-		// It responds almost immediately. Let's print out the data
-		printTemperature(insideThermometer); // Use a simple function to print out the data
-		
+		if ( !OneWire_search(addr)) {
+			UART_SendStr("\nNo more addresses.\n");
+			UART_SendStr("\n\n");
+			OneWire_reset_search();
+			delay(250);
+		}
+		else
+		{		
+			UART_SendStr("ROM =");
+			for( i = 0; i < 8; i++) {
+				UART_SendChar(' ');
+				UART_SendByte(addr[i], HEX);
+			}
+			
+			if (OneWire_crc8(addr, 7) != addr[7]) {
+				UART_SendStr("\nCRC is not valid!\n");
+				goto skip;
+			}
+			UART_SendStr("\n\n");
+			
+			// the first ROM byte indicates which chip
+			switch (addr[0]) {
+			case 0x10:
+				UART_SendStr("\n  Chip = DS18S20\n");  // or old DS1820
+				type_s = 1;
+				break;
+			case 0x28:
+				UART_SendStr("\n  Chip = DS18B20\n");
+				type_s = 0;
+				break;
+			case 0x22:
+				UART_SendStr("\n  Chip = DS1822\n");
+				type_s = 0;
+				break;
+			default:
+				UART_SendStr("\nDevice is not a DS18x20 family device.\n");
+				goto skip;
+			} 
+			
+			OneWire_reset();
+			OneWire_select(addr);
+			OneWire_write(0x44, 1);        // start conversion, with parasite power on at the end
+			
+			delay(1000);     // maybe 750ms is enough, maybe not
+			// we might do a OneWire_depower() here, but the reset will take care of it.
+			
+			present = OneWire_reset();
+			OneWire_select(addr);    
+			OneWire_write(0xBE, 0);         // Read Scratchpad
+			
+			UART_SendStr("  Data = ");
+			UART_SendByte(present, HEX);
+			UART_SendStr(" ");
+			for ( i = 0; i < 9; i++) {           // we need 9 bytes
+				data[i] = OneWire_read();
+				UART_SendByte(data[i], HEX);
+				UART_SendStr(" ");
+			}
+			UART_SendStr(" CRC=");
+			UART_SendByte(OneWire_crc8(data, 8), HEX);
+			UART_SendStr("\n\n");
+			
+			// Convert the data to actual temperature
+			// because the result is a 16 bit signed integer, it should
+			// be stored to an "int16_t" type, which is always 16 bits
+			// even when compiled on a 32 bit processor.
+			int16_t raw = (data[1] << 8) | data[0];
+			if (type_s) {
+				raw = raw << 3; // 9 bit resolution default
+				if (data[7] == 0x10) {
+					// "count remain" gives full 12 bit resolution
+					raw = (raw & 0xFFF0) + 12 - data[6];
+				}
+			} else {
+				byte cfg = (data[4] & 0x60);
+				// at lower res, the low bits are undefined, so let's zero them
+				if (cfg == 0x00) raw = raw & ~7;  // 9 bit resolution, 93.75 ms
+				else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
+				else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+				//// default is 12 bit resolution, 750 ms conversion time
+			}
+			celsius = (float)raw / 16.0;
+			fahrenheit = celsius * 1.8 + 32.0;
+			UART_SendStr("  Temperature = ");
+			UART_SendFloat(celsius);
+			UART_SendStr(" Celsius, ");
+			UART_SendFloat(fahrenheit);
+			UART_SendStr(" Fahrenheit\n");
+		}
+	skip:
 		
 		LED_RUN_TOGGLE;
-		Delay(500);
+		Delay(250);
 #else
 		if (Millis() - tmp_time > 500)
 		{

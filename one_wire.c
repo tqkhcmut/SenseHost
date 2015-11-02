@@ -1,31 +1,13 @@
+
 #include "one_wire.h"
 #include "delay.h"
 
-int 	DIRECT_READ(void)
+static inline void delayMicroseconds(unsigned int us)
 {	
-	DIRECT_MODE_INPUT();
-	if(GPIO_ReadInputPin(ONEWIRE_GPIO, ONEWIRE_PIN) == RESET)
-		return 0;
-	else
-		return 1;
-}
-void 	DIRECT_MODE_INPUT(void)
-{
-	GPIO_Init(ONEWIRE_GPIO, ONEWIRE_PIN, GPIO_MODE_IN_FL_NO_IT);
-}
-void 	DIRECT_MODE_OUTPUT(void)
-{
-	GPIO_Init(ONEWIRE_GPIO, ONEWIRE_PIN, GPIO_MODE_OUT_PP_HIGH_FAST);
-}
-void 	DIRECT_WRITE_LOW(void)
-{
-//	DIRECT_MODE_OUTPUT();
-	GPIO_WriteLow(ONEWIRE_GPIO, ONEWIRE_PIN);
-}
-void 	DIRECT_WRITE_HIGH(void)
-{
-//	DIRECT_MODE_OUTPUT();
-	GPIO_WriteHigh(ONEWIRE_GPIO, ONEWIRE_PIN);
+	while(us--)
+	{
+		asm("nop");  
+	}
 }
 
 #if ONEWIRE_SEARCH
@@ -35,6 +17,16 @@ uint8_t LastDiscrepancy;
 uint8_t LastFamilyDiscrepancy;
 uint8_t LastDeviceFlag;
 #endif
+
+
+void OneWire_Init(void)
+{
+	DIRECT_MODE_OUTPUT();
+#if ONEWIRE_SEARCH
+	OneWire_reset_search();
+#endif
+}
+
 
 // Perform the onewire reset function.  We will wait up to 250uS for
 // the bus to come high, if it doesn't then it is broken or shorted
@@ -47,52 +39,52 @@ uint8_t OneWire_reset(void)
 	uint8_t r;
 	uint8_t retries = 125;
 	
+	DIRECT_MODE_OUTPUT();
+	DIRECT_WRITE_HIGH();
+	
+	disableInterrupts();
 	DIRECT_MODE_INPUT();
+	enableInterrupts();
 	// wait until the wire is high... just in case
 	do {
 		if (--retries == 0) return 0;
-		_delay_us(2);
-	} while ( !DIRECT_READ());
+		delayMicroseconds(2);
+	} while (DIRECT_READ() == 0);
 	
+	disableInterrupts();
 	DIRECT_MODE_OUTPUT();	// drive output low
 	DIRECT_WRITE_LOW();
-	
-	_delay_us(480);
-	
+	enableInterrupts();
+	delayMicroseconds(500);
+	disableInterrupts();
 	DIRECT_MODE_INPUT();	// allow it to float
-	_delay_us(70);
+	delayMicroseconds(80);
 	r = !DIRECT_READ();
-	
-	_delay_us(410);
+	enableInterrupts();
+	delayMicroseconds(420);
 	return r;
 }
 
-
-//
-// Write a bit. Port and bit is used to cut lookup time and provide
-// more certain timing.
-//
 void OneWire_write_bit(uint8_t v)
 {
 	if (v & 1) {
-		
+		disableInterrupts();
 		DIRECT_MODE_OUTPUT();	// drive output low
 		DIRECT_WRITE_LOW();
-		_delay_us(10);
+		delayMicroseconds(6);
 		DIRECT_WRITE_HIGH();	// drive output high
-		
-		_delay_us(55);
+		enableInterrupts();
+		delayMicroseconds(64);
 	} else {
-		
+		disableInterrupts();
 		DIRECT_MODE_OUTPUT();	// drive output low
 		DIRECT_WRITE_LOW();
-		_delay_us(65);
+		delayMicroseconds(60);
 		DIRECT_WRITE_HIGH();	// drive output high
-		
-		_delay_us(5);
+		enableInterrupts();
+		delayMicroseconds(10);
 	}
 }
-
 
 //
 // Read a bit. Port and bit is used to cut lookup time and provide
@@ -102,14 +94,15 @@ uint8_t OneWire_read_bit(void)
 {
 	uint8_t r;
 	
+	disableInterrupts();
 	DIRECT_MODE_OUTPUT();
 	DIRECT_WRITE_LOW();
-	_delay_us(3);
+	delayMicroseconds(6);
 	DIRECT_MODE_INPUT();	// let pin float, pull up will raise
-	_delay_us(10);
+	delayMicroseconds(9);
 	r = DIRECT_READ();
-	
-	_delay_us(53);
+	enableInterrupts();
+	delayMicroseconds(55);
 	return r;
 }
 
@@ -121,29 +114,28 @@ uint8_t OneWire_read_bit(void)
 // go tri-state at the end of the write to avoid heating in a short or
 // other mishap.
 //
-void OneWire_write(uint8_t v, uint8_t power /* = 0 */) 
-{
+void OneWire_write(uint8_t v, uint8_t power /* = 0 */) {
 	uint8_t bitMask;
 	
 	for (bitMask = 0x01; bitMask; bitMask <<= 1) {
 		OneWire_write_bit( (bitMask & v)?1:0);
 	}
 	if ( !power) {
-		
+		disableInterrupts();
 		DIRECT_MODE_INPUT();
 		DIRECT_WRITE_LOW();
-		
+		enableInterrupts();
 	}
 }
 
-void OneWire_write_bytes(const uint8_t *buf, uint16_t count, bool power /* = 0 */) {
+void OneWire_write_bytes(const uint8_t *buf, uint16_t count, uint8_t power /* = 0 */) {
 	for (uint16_t i = 0 ; i < count ; i++)
 		OneWire_write(buf[i], 0);
 	if (!power) {
-		
+		disableInterrupts();
 		DIRECT_MODE_INPUT();
 		DIRECT_WRITE_LOW();
-		
+		enableInterrupts();
 	}
 }
 
@@ -168,13 +160,13 @@ void OneWire_read_bytes(uint8_t *buf, uint16_t count) {
 //
 // Do a ROM select
 //
-void OneWire_select(const uint8_t rom[8])
+void OneWire_select( uint8_t rom[8])
 {
-	uint8_t i;
+	int i;
 	
 	OneWire_write(0x55, 0);           // Choose ROM
 	
-	for (i = 0; i < 8; i++) OneWire_write(rom[i], 0);
+	for( i = 0; i < 8; i++) OneWire_write(rom[i], 0);
 }
 
 //
@@ -187,9 +179,9 @@ void OneWire_skip()
 
 void OneWire_depower()
 {
-	
+	disableInterrupts();
 	DIRECT_MODE_INPUT();
-	
+	enableInterrupts();
 }
 
 #if ONEWIRE_SEARCH
@@ -204,33 +196,20 @@ void OneWire_reset_search()
 	LastDiscrepancy = 0;
 	LastDeviceFlag = FALSE;
 	LastFamilyDiscrepancy = 0;
-	for(int i = 7; ; i--) {
+	for(int i = 7; ; i--)
+	{
 		ROM_NO[i] = 0;
 		if ( i == 0) break;
 	}
 }
 
-// Setup the search to find the device type 'family_code' on the next call
-// to search(*newAddr) if it is present.
-//
-void OneWire_target_search(uint8_t family_code)
-{
-	// set the search state to find SearchFamily type devices
-	ROM_NO[0] = family_code;
-	for (uint8_t i = 1; i < 8; i++)
-		ROM_NO[i] = 0;
-	LastDiscrepancy = 64;
-	LastFamilyDiscrepancy = 0;
-	LastDeviceFlag = FALSE;
-}
-
 //
 // Perform a search. If this function returns a '1' then it has
 // enumerated the next device and you may retrieve the ROM from the
-// OneWire::address variable. If there are no devices, no further
+// OneWire_address variable. If there are no devices, no further
 // devices, or something horrible happens in the middle of the
 // enumeration then a 0 is returned.  If a new device is found then
-// its address is copied to newAddr.  Use OneWire::reset_search() to
+// its address is copied to newAddr.  Use OneWire_reset_search() to
 // start over.
 //
 // --- Replaced by the one from the Dallas Semiconductor web site ---
@@ -368,7 +347,8 @@ uint8_t OneWire_search(uint8_t *newAddr)
 #if ONEWIRE_CRC8_TABLE
 // This table comes from Dallas sample code where it is freely reusable,
 // though Copyright (C) 2000 Dallas Semiconductor Corporation
-static const uint8_t PROGMEM dscrc_table[] = {
+
+static const uint8_t dscrc_table[] = {
 	0, 94,188,226, 97, 63,221,131,194,156,126, 32,163,253, 31, 65,
 	157,195, 33,127,252,162, 64, 30, 95,  1,227,189, 62, 96,130,220,
 	35,125,159,193, 66, 28,254,160,225,191, 93,  3,128,222, 60, 98,
@@ -393,21 +373,22 @@ static const uint8_t PROGMEM dscrc_table[] = {
 // compared to all those delayMicrosecond() calls.  But I got
 // confused, so I use this table from the examples.)
 //
-uint8_t OneWire_crc8(const uint8_t *addr, uint8_t len)
+uint8_t OneWire_crc8( uint8_t *addr, uint8_t len)
 {
 	uint8_t crc = 0;
 	
 	while (len--) {
-		crc = pgm_read_byte(dscrc_table + (crc ^ *addr++));
+		crc = *(dscrc_table + (crc ^ *addr++));
 	}
 	return crc;
 }
+
 #else
 //
 // Compute a Dallas Semiconductor 8 bit CRC directly.
 // this is much slower, but much smaller, than the lookup table.
 //
-uint8_t OneWire_crc8(const uint8_t *addr, uint8_t len)
+uint8_t OneWire_crc8( uint8_t *addr, uint8_t len)
 {
 	uint8_t crc = 0;
 	
@@ -425,17 +406,23 @@ uint8_t OneWire_crc8(const uint8_t *addr, uint8_t len)
 #endif
 
 #if ONEWIRE_CRC16
+uint8_t OneWire_check_crc16(uint8_t* input, uint16_t len, uint8_t* inverted_crc)
+{
+	uint16_t crc = ~OneWire_crc16(input, len);
+	return (crc & 0xFF) == inverted_crc[0] && (crc >> 8) == inverted_crc[1];
+}
 
-uint16_t OneWire_crc16(const uint8_t* input, uint16_t len, uint16_t crc)
+uint16_t OneWire_crc16(uint8_t* input, uint16_t len)
 {
 	static const uint8_t oddparity[16] =
 	{ 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
+	uint16_t crc = 0;    // Starting seed is zero.
 	
 	for (uint16_t i = 0 ; i < len ; i++) {
 		// Even though we're just copying a byte from the input,
 		// we'll be doing 16-bit computation with it.
 		uint16_t cdata = input[i];
-		cdata = (cdata ^ crc) & 0xff;
+		cdata = (cdata ^ (crc & 0xff)) & 0xff;
 		crc >>= 8;
 		
 		if (oddparity[cdata & 0x0F] ^ oddparity[cdata >> 4])
@@ -448,46 +435,6 @@ uint16_t OneWire_crc16(const uint8_t* input, uint16_t len, uint16_t crc)
 	}
 	return crc;
 }
-bool OneWire_check_crc16(const uint8_t* input, uint16_t len, const uint8_t* inverted_crc, uint16_t crc)
-{
-	crc = ~OneWire_crc16(input, len, crc);
-	return (bool)((crc & 0xFF) == inverted_crc[0] && (crc >> 8) == inverted_crc[1]);
-}
-
 #endif
 
 #endif
-
-void OneWire_Init(void)
-{
-#if ONEWIRE_SEARCH
-	OneWire_reset_search();
-#endif
-}
-
-struct OneWire _one_wire = 
-{
-	.Init = OneWire_Init,
-	.reset = OneWire_reset,
-	.select = OneWire_select,
-	.skip = OneWire_skip,
-	.write = OneWire_write,
-	.write_bytes = OneWire_write_bytes,
-	.read = OneWire_read,
-	.read_bytes = OneWire_read_bytes,
-	.write_bit = OneWire_write_bit,
-	.read_bit = OneWire_read_bit,
-	.depower = OneWire_depower,
-#if ONEWIRE_SEARCH
-	.reset_search = OneWire_reset_search,
-	.target_search = OneWire_target_search,
-	.search = OneWire_search,
-#endif 
-#if ONEWIRE_CRC
-	.crc8 = OneWire_crc8,
-#if ONEWIRE_CRC16
-	.check_crc16 = OneWire_check_crc16,
-	.crc16 = OneWire_crc16
-#endif 
-#endif
-};

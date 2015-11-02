@@ -57,24 +57,12 @@ void Delay(unsigned int ms_time)
   delay_count = ms_time;
   while(delay_count);
 }
+
 void DelayUs(unsigned int time)
 {
-//  if (time < 1000)
-//  {
-//    TIM3_SetCounter(0);
-//    while (TIM3_GetCounter() < time);
-//  }
-//  else
-//  {
-//    unsigned int ms, us;
-//    ms = time / 1000;
-//    us = time % 1000;
-//    delay(ms);
-//    DelayUs(us);
-//  }
-	
-	unsigned int count_us = time / 2;// * CLK_GetClockFreq()/1000000;
-	while (count_us--);
+	sim();
+	while(time--);
+	rim();
 }
 unsigned int Millis(void)
 {
